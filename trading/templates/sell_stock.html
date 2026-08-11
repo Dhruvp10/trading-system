@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}
+Sell Stock
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow">
+
+        <div class="card-header bg-danger text-white">
+            <h3>Sell Stock</h3>
+        </div>
+
+        <div class="card-body">
+
+            <h4>{{ stock.company_name }}</h4>
+
+            <table class="table">
+                <tr>
+                    <th>Symbol</th>
+                    <td>{{ stock.symbol }}</td>
+                </tr>
+
+                <tr>
+                    <th>Available Quantity</th>
+                    <td>{{ stock.quantity }}</td>
+                </tr>
+
+                <tr>
+                    <th>Average Price</th>
+                    <td>₹ {{ stock.average_price }}</td>
+                </tr>
+            </table>
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label>Quantity to Sell</label>
+                    <input
+                        type="number"
+                        name="quantity"
+                        class="form-control"
+                        min="1"
+                        max="{{ stock.quantity }}"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-danger">
+                    Sell Stock
+                </button>
+
+                <a href="{% url 'portfolio' %}" class="btn btn-secondary">
+                    Cancel
+                </a>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

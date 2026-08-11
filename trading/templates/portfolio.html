@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}
+Portfolio
+{% endblock %}
+
+{% block content %}
+
+<h2 class="mb-4">📊 My Portfolio</h2>
+
+<table class="table table-bordered table-striped">
+
+   <thead class="table-dark">
+<tr>
+    <th>Symbol</th>
+    <th>Qty</th>
+    <th>Avg Price</th>
+    <th>Live Price</th>
+    <th>Investment</th>
+    <th>Current Value</th>
+    <th>P/L</th>
+    <th>Action</th>
+</tr>
+</thead>
+
+    <tbody>
+
+        {% for stock in portfolio %}
+
+        <tr>
+
+            <td>{{ stock.symbol }}</td>
+            <td>{{ stock.company_name }}</td>
+            <td>{{ stock.quantity }}</td>
+            <td>₹ {{ stock.average_price }}</td>
+
+        </tr>
+
+        <td>
+   <a href="{% url 'sell_stock' stock.symbol %}" class="btn btn-danger btn-sm">
+    Sell
+</a>
+
+</td>
+
+        {% empty %}
+
+        <tr>
+
+            <td colspan="4" class="text-center">
+                No stocks purchased yet.
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% endblock %}

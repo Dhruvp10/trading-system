@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}
+Transactions
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">📜 Transaction History</h2>
+
+    <table class="table table-bordered table-hover">
+
+        <thead class="table-dark">
+
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Symbol</th>
+                <th>Company</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Total Amount</th>
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+        {% for transaction in transactions %}
+
+            <tr>
+
+                <td>{{ transaction.created_at }}</td>
+
+                <td>
+                    {% if transaction.transaction_type == "BUY" %}
+                        <span class="badge bg-success">BUY</span>
+                    {% else %}
+                        <span class="badge bg-danger">SELL</span>
+                    {% endif %}
+                </td>
+
+                <td>{{ transaction.symbol }}</td>
+
+                <td>{{ transaction.company_name }}</td>
+
+                <td>{{ transaction.quantity }}</td>
+
+                <td>₹ {{ transaction.price }}</td>
+
+                <td>₹ {{ transaction.total_amount }}</td>
+
+            </tr>
+
+        {% empty %}
+
+            <tr>
+                <td colspan="7" class="text-center">
+                    No Transactions Found
+                </td>
+            </tr>
+
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}

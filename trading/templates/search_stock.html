@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}
+Search Stock
+{% endblock %}
+
+{% block content %}
+
+<h2 class="mb-4">🔍 Search Stock</h2>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <div class="input-group">
+        <input
+            type="text"
+            name="symbol"
+            class="form-control"
+            placeholder="Enter Stock Symbol (e.g. TCS, RELIANCE, INFY)"
+            required
+        >
+
+        <button class="btn btn-primary">
+            Search
+        </button>
+    </div>
+</form>
+
+{% if stock %}
+
+<div class="card mt-4 shadow">
+
+    <div class="card-body">
+
+        <h3>{{ stock.company }}</h3>
+
+        <div class="mt-3">
+
+    <div class="tradingview-widget-container">
+        <div id="tradingview_chart"></div>
+    </div>
+
+</div>
+
+<script src="https://s3.tradingview.com/tv.js"></script>
+
+<script>
+new TradingView.widget({
+    "width": "100%",
+    "height": 500,
+    "symbol": "NSE:{{ stock.symbol }}",
+    "interval": "D",
+    "timezone": "Asia/Kolkata",
+    "theme": "light",
+    "style": "1",
+    "locale": "en",
+    "toolbar_bg": "#f1f3f6",
+    "enable_publishing": false,
+    "hide_top_toolbar": false,
+    "container_id": "tradingview_chart"
+});
+
+</script>
+
+        <table class="table">
+
+            <tr>
+                <th>Symbol</th>
+                <td>{{ stock.symbol }}</td>
+            </tr>
+
+            <tr>
+                <th>Current Price</th>
+                <td>₹ {{ stock.price }}</td>
+            </tr>
+
+            <tr>
+                <th>Open</th>
+                <td>₹ {{ stock.open }}</td>
+            </tr>
+
+            <tr>
+                <th>High</th>
+                <td>₹ {{ stock.high }}</td>
+            </tr>
+
+            <tr>
+                <th>Low</th>
+                <td>₹ {{ stock.low }}</td>
+            </tr>
+
+            <tr>
+                <th>Volume</th>
+                <td>{{ stock.volume }}</td>
+            </tr>
+
+        </table>
+
+        <hr>
+
+        <h4>Buy Stock</h4>
+
+        <form method="POST" action="{% url 'buy_stock' %}">
+            {% csrf_token %}
+
+            <input type="hidden" name="symbol" value="{{ stock.symbol }}">
+            <input type="hidden" name="company" value="{{ stock.company }}">
+            <input type="hidden" name="price" value="{{ stock.price }}">
+
+            <div class="mb-3">
+                <label class="form-label">Quantity</label>
+                <input
+                    type="number"
+                    name="quantity"
+                    class="form-control"
+                    min="1"
+                    required
+                >
+            </div>
+
+            <button class="btn btn-success">
+                Buy Stock
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+{% if error %}
+<div class="alert alert-danger mt-3">
+    {{ error }}
+</div>
+{% endif %}
+
+{% endblock %}

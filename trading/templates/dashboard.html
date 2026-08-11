@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}
+Dashboard
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">📈 Trading Dashboard</h2>
+
+    <div class="row mb-4">
+
+    <div class="col-md-6">
+        <div class="card bg-primary text-white shadow">
+            <div class="card-body">
+                <h5>NIFTY 50</h5>
+                <h3>{{ nifty }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card bg-success text-white shadow">
+            <div class="card-body">
+                <h5>SENSEX</h5>
+                <h3>{{ sensex }}</h3>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+    <div class="row">
+
+        <div class="col-md-3">
+            <div class="card shadow border-0 bg-primary text-white">
+                <div class="card-body">
+                    <h5>Total Balance</h5>
+                    <h2>₹100000</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow border-0 bg-success text-white">
+                <div class="card-body">
+                    <h5>Portfolio Value</h5>
+                    <h2>₹0</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow border-0 bg-warning">
+                <div class="card-body">
+                    <h5>Today's Profit</h5>
+                    <h2>₹0</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow border-0 bg-danger text-white">
+                <div class="card-body">
+                    <h5>Total Stocks</h5>
+                    <h2>0</h2>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<div class="row mt-4">
+
+    <div class="col-md-6">
+
+        <div class="card shadow">
+
+            <div class="card-header bg-dark text-white">
+                Portfolio Allocation
+            </div>
+
+            <div class="card-body">
+                <canvas id="portfolioChart"></canvas>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+const ctx = document.getElementById('portfolioChart');
+
+new Chart(ctx, {
+
+    type: 'pie',
+
+    data: {
+
+        labels: [
+
+            {% for stock in portfolio %}
+                "{{ stock.symbol }}",
+            {% endfor %}
+
+        ],
+
+        datasets: [{
+
+            data: [
+
+                {% for stock in portfolio %}
+                    {{ stock.quantity }},
+                {% endfor %}
+
+            ]
+
+        }]
+
+    }
+
+});
+
+</script>
+
+<div class="row mt-4">
+
+    <div class="col-md-12">
+
+        <div class="card shadow">
+
+            <div class="card-header bg-success text-white">
+                Portfolio Performance
+            </div>
+
+            <div class="card-body">
+                <canvas id="profitChart"></canvas>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const profitCtx = document.getElementById("profitChart");
+
+new Chart(profitCtx, {
+
+    type: "line",
+
+    data: {
+
+        labels: [
+            {% for stock in portfolio %}
+                "{{ stock.symbol }}",
+            {% endfor %}
+        ],
+
+        datasets: [{
+
+            label: "Investment",
+
+            data: [
+                {% for stock in portfolio %}
+                    {{ stock.average_price }},
+                {% endfor %}
+            ],
+
+            borderWidth: 2,
+            fill: false
+
+        }]
+
+    }
+
+});
+
+</script>
+
+{% endblock %}

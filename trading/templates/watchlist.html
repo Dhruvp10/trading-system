@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}
+Watchlist
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">⭐ My Watchlist</h2>
+
+    <table class="table table-bordered table-hover">
+
+        <thead class="table-dark">
+            <tr>
+                <th>Symbol</th>
+                <th>Company</th>
+                <th>Live Price</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for stock in watchlist %}
+
+            <tr>
+                <td>{{ stock.symbol }}</td>
+                <td>{{ stock.company }}</td>
+                <td>₹ {{ stock.price }}</td>
+            </tr>
+
+            {% empty %}
+
+            <tr>
+                <td colspan="3" class="text-center">
+                    No Stocks Added Yet
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}
