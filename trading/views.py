@@ -103,41 +103,107 @@ def search_stock(request):
                 try:
 
                     ticker = yf.Ticker(symbol + ".NS")
-                    info = ticker.info
 
-                    current_price = info.get("currentPrice")
+                    # ---------------------------------
+                    # Get recent market data
+                    # ---------------------------------
 
-                    if current_price is None:
-                        current_price = info.get(
-                            "regularMarketPrice"
+                    history = ticker.history(
+                        period="1d",
+                        interval="1m"
+                    )
+
+                    current_price = None
+                    open_price = 0
+                    high_price = 0
+                    low_price = 0
+                    volume = 0
+
+                    if not history.empty:
+
+                        latest = history.iloc[-1]
+
+                        current_price = latest.get("Close", 0)
+
+                        open_price = latest.get("Open", 0)
+
+                        high_price = latest.get("High", 0)
+
+                        low_price = latest.get("Low", 0)
+
+                        volume = latest.get("Volume", 0)
+
+
+                    # ---------------------------------
+                    # Fallback to ticker.info
+                    # ---------------------------------
+
+                    if not current_price or current_price <= 0:
+
+                        info = ticker.info
+
+                        current_price = (
+                            info.get("currentPrice")
+                            or info.get("regularMarketPrice")
+                            or 0
                         )
 
-                    if current_price is None:
-                        current_price = 0
+                        open_price = (
+                            info.get("open")
+                            or info.get("regularMarketOpen")
+                            or 0
+                        )
 
-                    stock_data = {
-                        "symbol": symbol,
-                        "company": db_stock.company_name,
-                        "price": current_price,
-                        "open": info.get("open", 0),
-                        "high": info.get("dayHigh", 0),
-                        "low": info.get("dayLow", 0),
-                        "volume": info.get("volume", 0),
-                    }
+                        high_price = (
+                            info.get("dayHigh")
+                            or info.get("regularMarketDayHigh")
+                            or 0
+                        )
+
+                        low_price = (
+                            info.get("dayLow")
+                            or info.get("regularMarketDayLow")
+                            or 0
+                        )
+
+                        volume = (
+                            info.get("volume")
+                            or info.get("regularMarketVolume")
+                            or 0
+                        )
+
+
+                    # ---------------------------------
+                    # Validate price
+                    # ---------------------------------
+
+                    if not current_price or current_price <= 0:
+
+                        error = (
+                            "Live price is currently unavailable. "
+                            "Please try again after a few seconds."
+                        )
+
+                    else:
+
+                        stock_data = {
+                            "symbol": symbol,
+                            "company": db_stock.company_name,
+                            "price": float(current_price),
+                            "open": float(open_price or 0),
+                            "high": float(high_price or 0),
+                            "low": float(low_price or 0),
+                            "volume": int(volume or 0),
+                        }
 
                 except Exception as e:
 
                     print("YFinance Error:", e)
 
-                    stock_data = {
-                        "symbol": symbol,
-                        "company": db_stock.company_name,
-                        "price": 0,
-                        "open": 0,
-                        "high": 0,
-                        "low": 0,
-                        "volume": 0,
-                    }
+                    error = (
+                        "Unable to fetch live stock price. "
+                        "Please try again."
+                    )
 
     return render(
         request,
@@ -147,7 +213,6 @@ def search_stock(request):
             "error": error,
         }
     )
-
 
 @login_required
 def buy_stock(request):
