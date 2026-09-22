@@ -1,73 +1,552 @@
-{% extends "base.html" %}
 
-{% block title %}
-Login
-{% endblock %}
+{% load static %}
 
-{% block content %}
-
-<div class="row justify-content-center">
-
-<div class="col-md-5">
-
-<div class="card shadow">
-
-<div class="card-header bg-primary text-white text-center">
-<h3>Login</h3>
-</div>
-
-<div class="card-body">
-
-<form method="POST">
-
-{% csrf_token %}
-
-{{ form.as_p }}
-
-<button class="btn btn-primary w-100">
-Login
-</button>
-
-</form>
-
-<hr>
-
-<p class="text-center">
-Don't have an account?
-<a href="{% url 'register' %}">Register</a>
-</p>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-{% endblock %}
-
-<!--
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Login | Trading System</title>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login | PaperTrade</title>
+
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Bootstrap Icons -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Google Font -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: #070b14;
+            color: white;
+            min-height: 100vh;
+        }
+
+        /* ================= NAVBAR ================= */
+
+        .navbar {
+            background: rgba(7, 11, 20, 0.96);
+            border-bottom: 1px solid #1c2636;
+            padding: 16px 0;
+        }
+
+        .navbar-brand {
+            color: white !important;
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .brand-icon {
+            color: #00d4ff;
+        }
+
+        .nav-link {
+            color: #9da8b8 !important;
+            font-weight: 500;
+            margin-left: 18px;
+            transition: 0.3s;
+        }
+
+        .nav-link:hover {
+            color: #00d4ff !important;
+        }
+
+        .register-btn {
+            border: 1px solid #00d4ff;
+            border-radius: 8px;
+            padding: 8px 18px !important;
+            color: #00d4ff !important;
+        }
+
+        .register-btn:hover {
+            background: #00d4ff;
+            color: #071018 !important;
+        }
+
+        /* ================= LOGIN AREA ================= */
+
+        .login-section {
+            min-height: calc(100vh - 75px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background:
+                radial-gradient(
+                    circle at 20% 30%,
+                    rgba(0, 212, 255, 0.10),
+                    transparent 30%
+                ),
+                radial-gradient(
+                    circle at 80% 70%,
+                    rgba(30, 80, 255, 0.10),
+                    transparent 30%
+                ),
+                #070b14;
+
+            padding: 50px 15px;
+        }
+
+        /* ================= LOGIN CARD ================= */
+
+        .login-card {
+            width: 100%;
+            max-width: 450px;
+
+            background: #0d1422;
+
+            border: 1px solid #263248;
+            border-radius: 18px;
+
+            padding: 40px;
+
+            box-shadow:
+                0 25px 70px rgba(0, 0, 0, 0.45);
+        }
+
+        .login-icon {
+            width: 65px;
+            height: 65px;
+
+            margin: 0 auto 20px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 15px;
+
+            background: #102333;
+            color: #00d4ff;
+
+            font-size: 30px;
+        }
+
+        .login-title {
+            text-align: center;
+            font-size: 30px;
+            font-weight: 800;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: #8995a7;
+            font-size: 14px;
+            margin-top: 10px;
+            margin-bottom: 30px;
+        }
+
+        /* ================= FORM ================= */
+
+        .form-label {
+            color: #c6cfda;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .form-control {
+            background: #111a2a;
+            border: 1px solid #2a374b;
+            color: white;
+
+            padding: 12px 14px;
+
+            border-radius: 8px;
+        }
+
+        .form-control:focus {
+            background: #111a2a;
+            color: white;
+
+            border-color: #00d4ff;
+
+            box-shadow:
+                0 0 0 0.2rem rgba(0, 212, 255, 0.10);
+        }
+
+        .form-control::placeholder {
+            color: #647184;
+        }
+
+        /* ================= LOGIN BUTTON ================= */
+
+        .login-btn {
+            width: 100%;
+
+            background: #00d4ff;
+            color: #061018;
+
+            border: none;
+
+            padding: 13px;
+
+            border-radius: 8px;
+
+            font-weight: 700;
+
+            font-size: 15px;
+
+            transition: 0.3s;
+        }
+
+        .login-btn:hover {
+            background: #1addff;
+            transform: translateY(-2px);
+        }
+
+        /* ================= ERROR ================= */
+
+        .error-box {
+            background: rgba(255, 70, 90, 0.10);
+            border: 1px solid rgba(255, 70, 90, 0.35);
+
+            color: #ff7180;
+
+            border-radius: 8px;
+
+            padding: 12px;
+
+            font-size: 13px;
+
+            margin-bottom: 20px;
+        }
+
+        /* ================= REGISTER ================= */
+
+        .register-text {
+            text-align: center;
+
+            color: #8995a7;
+
+            font-size: 14px;
+
+            margin-top: 25px;
+        }
+
+        .register-text a {
+            color: #00d4ff;
+
+            text-decoration: none;
+
+            font-weight: 600;
+        }
+
+        .register-text a:hover {
+            text-decoration: underline;
+        }
+
+        /* ================= SECURITY ================= */
+
+        .security-box {
+            margin-top: 25px;
+
+            padding: 12px;
+
+            background: #101927;
+
+            border-radius: 8px;
+
+            text-align: center;
+
+            color: #7f8b9c;
+
+            font-size: 12px;
+        }
+
+        .security-box i {
+            color: #19d98b;
+            margin-right: 5px;
+        }
+
+        /* ================= MOBILE ================= */
+
+        @media (max-width: 576px) {
+
+            .login-card {
+                padding: 30px 22px;
+            }
+
+            .login-title {
+                font-size: 26px;
+            }
+
+            .nav-link {
+                margin-left: 0;
+            }
+
+        }
+
+    </style>
+
 </head>
+
+
 <body>
 
-    <h2>Login</h2>
 
-    <form method="POST">
-        {% csrf_token %}
-        {{ form.as_p }}
+<!-- ================= NAVBAR ================= -->
 
-        <button type="submit">Login</button>
-    </form>
+<nav class="navbar navbar-expand-lg">
 
-    <p>Don't have an account?
-        <a href="{% url 'register' %}">Register</a>
-    </p>
+    <div class="container">
+
+        <!-- Logo -->
+
+        <a class="navbar-brand" href="{% url 'home' %}">
+
+            <span class="brand-icon">📈</span>
+
+            PaperTrade
+
+        </a>
+
+
+        <!-- Mobile button -->
+
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNav"
+        >
+
+            <span class="navbar-toggler-icon"></span>
+
+        </button>
+        
+        <a href="{% url 'password_reset' %}">
+    Forgot Password?
+</a>
+
+
+        <div
+            class="collapse navbar-collapse"
+            id="navbarNav"
+        >
+
+            <ul class="navbar-nav ms-auto align-items-lg-center">
+
+                <li class="nav-item">
+
+                    <a
+                        class="nav-link"
+                        href="{% url 'home' %}"
+                    >
+                        Home
+                    </a>
+
+                </li>
+
+
+                <li class="nav-item">
+
+                    <a
+                        class="nav-link register-btn"
+                        href="{% url 'register' %}"
+                    >
+                        Create Account
+                    </a>
+
+                </li>
+
+            </ul>
+
+        </div>
+
+    </div>
+
+</nav>
+
+
+<!-- ================= LOGIN SECTION ================= -->
+
+<section class="login-section">
+
+    <div class="login-card">
+
+
+        <!-- Icon -->
+
+        <div class="login-icon">
+
+            <i class="bi bi-person-lock"></i>
+
+        </div>
+
+
+        <!-- Heading -->
+
+        <h1 class="login-title">
+            Welcome Back
+        </h1>
+
+
+        <p class="login-subtitle">
+            Login to continue your trading journey
+        </p>
+
+
+        <!-- LOGIN FORM -->
+
+        <form method="POST" action="{% url 'login' %}">
+
+            {% csrf_token %}
+
+
+            <!-- Form Errors -->
+
+            {% if form.errors %}
+
+                <div class="error-box">
+
+                    <i class="bi bi-exclamation-circle me-2"></i>
+
+                    Username or password is incorrect.
+                    Please try again.
+
+                </div>
+
+            {% endif %}
+
+
+            <!-- Non-field Errors -->
+
+            {% if form.non_field_errors %}
+
+                <div class="error-box">
+
+                    {{ form.non_field_errors }}
+
+                </div>
+
+            {% endif %}
+
+
+            <!-- Username -->
+
+            <div class="mb-3">
+
+                <label
+                    class="form-label"
+                    for="id_username"
+                >
+                    Username
+                </label>
+
+
+                <input
+                    type="text"
+                    name="username"
+                    id="id_username"
+                    class="form-control"
+                    placeholder="Enter your username"
+                    value="{{ form.username.value|default:'' }}"
+                    required
+                    autofocus
+                >
+
+            </div>
+
+
+            <!-- Password -->
+
+            <div class="mb-4">
+
+                <label
+                    class="form-label"
+                    for="id_password"
+                >
+                    Password
+                </label>
+
+
+                <input
+                    type="password"
+                    name="password"
+                    id="id_password"
+                    class="form-control"
+                    placeholder="Enter your password"
+                    required
+                >
+
+            </div>
+
+
+            <!-- Login Button -->
+
+            <button
+                type="submit"
+                class="login-btn"
+            >
+
+                Login
+
+                <i class="bi bi-arrow-right ms-2"></i>
+
+            </button>
+
+
+        </form>
+
+
+        <!-- Register -->
+
+        <div class="register-text">
+
+            Don't have an account?
+
+            <a href="{% url 'register' %}">
+                Create Account
+            </a>
+
+        </div>
+
+
+        <!-- Security -->
+
+        <div class="security-box">
+
+            <i class="bi bi-shield-check"></i>
+
+            Your account is securely authenticated
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+<!-- Bootstrap JS -->
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
 
 </body>
+
 </html>
->
+```

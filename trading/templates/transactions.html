@@ -6,67 +6,132 @@ Transactions
 
 {% block content %}
 
-<div class="container mt-4">
+<div class="container mt-5">
 
-    <h2 class="mb-4">📜 Transaction History</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">📜 Transaction History</h2>
+            <p class="text-muted mb-0">
+                View all your stock buying and selling transactions.
+            </p>
+        </div>
 
-    <table class="table table-bordered table-hover">
+        <a href="{% url 'dashboard' %}" class="btn btn-primary">
+            ← Dashboard
+        </a>
+    </div>
 
-        <thead class="table-dark">
 
-            <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Symbol</th>
-                <th>Company</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>Total Amount</th>
-            </tr>
+    <div class="card shadow-sm border-0">
 
-        </thead>
+        <div class="card-body">
 
-        <tbody>
+            <div class="table-responsive">
 
-        {% for transaction in transactions %}
+                <table class="table table-hover align-middle">
 
-            <tr>
+                    <thead class="table-dark">
 
-                <td>{{ transaction.created_at }}</td>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Symbol</th>
+                            <th>Company</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total Amount</th>
+                        </tr>
 
-                <td>
-                    {% if transaction.transaction_type == "BUY" %}
-                        <span class="badge bg-success">BUY</span>
-                    {% else %}
-                        <span class="badge bg-danger">SELL</span>
-                    {% endif %}
-                </td>
+                    </thead>
 
-                <td>{{ transaction.symbol }}</td>
+                    <tbody>
 
-                <td>{{ transaction.company_name }}</td>
+                    {% for transaction in transactions %}
 
-                <td>{{ transaction.quantity }}</td>
+                        <tr>
 
-                <td>₹ {{ transaction.price }}</td>
+                            <td>
+                                {{ transaction.created_at|date:"d M Y, h:i A" }}
+                            </td>
 
-                <td>₹ {{ transaction.total_amount }}</td>
+                            <td>
 
-            </tr>
+                                {% if transaction.transaction_type == "BUY" %}
 
-        {% empty %}
+                                    <span class="badge bg-success px-3 py-2">
+                                        BUY
+                                    </span>
 
-            <tr>
-                <td colspan="7" class="text-center">
-                    No Transactions Found
-                </td>
-            </tr>
+                                {% else %}
 
-        {% endfor %}
+                                    <span class="badge bg-danger px-3 py-2">
+                                        SELL
+                                    </span>
 
-        </tbody>
+                                {% endif %}
 
-    </table>
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ transaction.symbol }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ transaction.company_name }}
+                            </td>
+
+                            <td>
+                                {{ transaction.quantity }}
+                            </td>
+
+                            <td>
+                                ₹{{ transaction.price|floatformat:2 }}
+                            </td>
+
+                            <td>
+                                <strong>
+                                    ₹{{ transaction.total_amount|floatformat:2 }}
+                                </strong>
+                            </td>
+
+                        </tr>
+
+                    {% empty %}
+
+                        <tr>
+
+                            <td colspan="7" class="text-center py-5">
+
+                                <h5>📭 No Transactions Found</h5>
+
+                                <p class="text-muted">
+                                    Your buy and sell transactions will appear here.
+                                </p>
+
+                                <a
+                                    href="{% url 'search_stock' %}"
+                                    class="btn btn-primary"
+                                >
+                                    Search Stocks
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
 

@@ -1,192 +1,986 @@
 {% extends "base.html" %}
 
 {% block title %}
-Dashboard
+Dashboard | PaperTrade
 {% endblock %}
+
 
 {% block content %}
 
-<div class="container mt-4">
+<style>
 
-    <h2 class="mb-4">📈 Trading Dashboard</h2>
+    /* ================= DASHBOARD ================= */
 
-    <div class="row mb-4">
+    .dashboard-wrapper {
+        padding: 45px 0 70px;
+    }
 
-    <div class="col-md-6">
-        <div class="card bg-primary text-white shadow">
-            <div class="card-body">
-                <h5>NIFTY 50</h5>
-                <h3>{{ nifty }}</h3>
-            </div>
-        </div>
-    </div>
 
-    <div class="col-md-6">
-        <div class="card bg-success text-white shadow">
-            <div class="card-body">
-                <h5>SENSEX</h5>
-                <h3>{{ sensex }}</h3>
-            </div>
-        </div>
-    </div>
+    .dashboard-heading {
+        margin-bottom: 35px;
+    }
 
-</div>
 
-    <div class="row">
+    .dashboard-heading h1 {
+        font-size: 34px;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
 
-        <div class="col-md-3">
-            <div class="card shadow border-0 bg-primary text-white">
-                <div class="card-body">
-                    <h5>Total Balance</h5>
-                    <h2>₹100000</h2>
-                </div>
-            </div>
-        </div>
 
-        <div class="col-md-3">
-            <div class="card shadow border-0 bg-success text-white">
-                <div class="card-body">
-                    <h5>Portfolio Value</h5>
-                    <h2>₹0</h2>
-                </div>
-            </div>
-        </div>
+    .dashboard-heading p {
+        color: #8995a7;
+        margin: 0;
+    }
 
-        <div class="col-md-3">
-            <div class="card shadow border-0 bg-warning">
-                <div class="card-body">
-                    <h5>Today's Profit</h5>
-                    <h2>₹0</h2>
-                </div>
-            </div>
-        </div>
 
-        <div class="col-md-3">
-            <div class="card shadow border-0 bg-danger text-white">
-                <div class="card-body">
-                    <h5>Total Stocks</h5>
-                    <h2>0</h2>
-                </div>
-            </div>
-        </div>
+    /* ================= STAT CARDS ================= */
 
-    </div>
+    .stat-card {
+        background: #0d1422;
+        border: 1px solid #263248;
+        border-radius: 14px;
+        padding: 25px;
+        height: 100%;
+        transition: 0.3s;
+    }
 
-</div>
 
-<div class="row mt-4">
+    .stat-card:hover {
+        border-color: #00d4ff;
+        transform: translateY(-4px);
+    }
 
-    <div class="col-md-6">
 
-        <div class="card shadow">
+    .stat-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
 
-            <div class="card-header bg-dark text-white">
-                Portfolio Allocation
-            </div>
 
-            <div class="card-body">
-                <canvas id="portfolioChart"></canvas>
-            </div>
+    .stat-title {
+        color: #8995a7;
+        font-size: 14px;
+        font-weight: 500;
+    }
 
-        </div>
 
-    </div>
+    .stat-icon {
+        width: 45px;
+        height: 45px;
 
-</div>
+        border-radius: 10px;
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        display: flex;
+        align-items: center;
+        justify-content: center;
 
-<script>
+        background: #102333;
 
-const ctx = document.getElementById('portfolioChart');
+        color: #00d4ff;
 
-new Chart(ctx, {
+        font-size: 20px;
+    }
 
-    type: 'pie',
 
-    data: {
+    .stat-value {
+        font-size: 27px;
+        font-weight: 800;
+        color: #ffffff;
+    }
 
-        labels: [
 
-            {% for stock in portfolio %}
-                "{{ stock.symbol }}",
-            {% endfor %}
+    .stat-subtitle {
+        color: #687587;
+        font-size: 12px;
+        margin-top: 7px;
+    }
 
-        ],
 
-        datasets: [{
+    /* ================= PROFIT ================= */
 
-            data: [
+    .profit-value {
+        color: #19d98b !important;
+    }
 
-                {% for stock in portfolio %}
-                    {{ stock.quantity }},
-                {% endfor %}
 
-            ]
+    .loss-value {
+        color: #ff5c70 !important;
+    }
 
-        }]
+
+    /* ================= MARKET CARDS ================= */
+
+    .market-card {
+        background: #0d1422;
+        border: 1px solid #263248;
+        border-radius: 14px;
+        padding: 22px;
+        transition: 0.3s;
+    }
+
+
+    .market-card:hover {
+        border-color: #00d4ff;
+        transform: translateY(-3px);
+    }
+
+
+    .market-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+
+    .market-name {
+        color: #8995a7;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+
+    .market-icon {
+        color: #00d4ff;
+        font-size: 20px;
+    }
+
+
+    .market-price {
+        font-size: 25px;
+        font-weight: 800;
+        margin-top: 12px;
+    }
+
+
+    .market-label {
+        color: #687587;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+
+    /* ================= SECTION ================= */
+
+    .dashboard-section {
+        margin-top: 45px;
+    }
+
+
+    .section-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+
+    .section-heading h3 {
+        font-size: 21px;
+        font-weight: 700;
+        margin: 0;
+    }
+
+
+    .section-heading a {
+        color: #00d4ff;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+
+    .section-heading a:hover {
+        text-decoration: underline;
+    }
+
+
+    /* ================= HOLDINGS ================= */
+
+    .holdings-card {
+        background: #0d1422;
+        border: 1px solid #263248;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+
+    .holdings-table {
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+    }
+
+
+    .holdings-table th {
+        background: #111a2a;
+        color: #8995a7;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 16px;
+        border-bottom: 1px solid #263248;
+    }
+
+
+    .holdings-table td {
+        padding: 17px 16px;
+        color: #d9dfe8;
+        font-size: 14px;
+        border-bottom: 1px solid #1c2738;
+        background: #0d1422;
+    }
+
+
+    .holdings-table tr:last-child td {
+        border-bottom: none;
+    }
+
+
+    .holdings-table tr:hover td {
+        background: #111a2a;
+    }
+
+
+    .stock-symbol {
+        font-weight: 700;
+        color: #ffffff;
+    }
+
+
+    .stock-company {
+        color: #687587;
+        font-size: 11px;
+        margin-top: 3px;
+    }
+
+
+    .quantity-badge {
+        background: #102333;
+        color: #00d4ff;
+        border: 1px solid #1d3b4b;
+        border-radius: 20px;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+
+    /* ================= EMPTY PORTFOLIO ================= */
+
+    .empty-portfolio {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+
+    .empty-icon {
+        width: 70px;
+        height: 70px;
+
+        border-radius: 50%;
+
+        background: #102333;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        margin: 0 auto 20px;
+
+        color: #00d4ff;
+
+        font-size: 28px;
+    }
+
+
+    .empty-portfolio h4 {
+        font-weight: 700;
+    }
+
+
+    .empty-portfolio p {
+        color: #8995a7;
+        font-size: 14px;
+        margin-bottom: 25px;
+    }
+
+
+    /* ================= QUICK ACTIONS ================= */
+
+    .action-card {
+        background: #0d1422;
+        border: 1px solid #263248;
+        border-radius: 14px;
+        padding: 25px;
+        height: 100%;
+    }
+
+
+    .action-card h4 {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+
+    .action-card p {
+        color: #8995a7;
+        font-size: 13px;
+        margin-bottom: 20px;
+    }
+
+
+    /* ================= RESPONSIVE ================= */
+
+    @media (max-width: 768px) {
+
+        .dashboard-wrapper {
+            padding: 30px 0 50px;
+        }
+
+
+        .dashboard-heading h1 {
+            font-size: 28px;
+        }
+
+
+        .stat-value {
+            font-size: 23px;
+        }
+
+
+        .holdings-card {
+            overflow-x: auto;
+        }
+
+
+        .holdings-table {
+            min-width: 650px;
+        }
 
     }
 
-});
+</style>
 
-</script>
 
-<div class="row mt-4">
+<div class="dashboard-wrapper">
 
-    <div class="col-md-12">
+    <div class="container">
 
-        <div class="card shadow">
 
-            <div class="card-header bg-success text-white">
-                Portfolio Performance
+        <!-- ================= HEADER ================= -->
+
+        <div class="dashboard-heading">
+
+            <h1>
+                Welcome back, {{ user.username }} 👋
+            </h1>
+
+            <p>
+                Here's an overview of your virtual trading account.
+            </p>
+
+        </div>
+
+
+        <!-- ================= STAT CARDS ================= -->
+
+        <div class="row g-4">
+
+
+            <!-- BALANCE -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <div class="stat-title">
+                            Available Balance
+                        </div>
+
+                        <div class="stat-icon">
+
+                            <i class="bi bi-wallet2"></i>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-value">
+
+                        ₹ {{ balance|floatformat:2 }}
+
+                    </div>
+
+
+                    <div class="stat-subtitle">
+
+                        Virtual trading balance
+
+                    </div>
+
+                </div>
+
             </div>
 
-            <div class="card-body">
-                <canvas id="profitChart"></canvas>
+
+            <!-- PORTFOLIO -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <div class="stat-title">
+                            Portfolio Value
+                        </div>
+
+                        <div class="stat-icon">
+
+                            <i class="bi bi-briefcase"></i>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-value">
+
+                        ₹ {{ portfolio_value|floatformat:2 }}
+
+                    </div>
+
+
+                    <div class="stat-subtitle">
+
+                        Current market value
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- PROFIT -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <div class="stat-title">
+                            Total P&L
+                        </div>
+
+                        <div class="stat-icon">
+
+                            <i class="bi bi-graph-up-arrow"></i>
+
+                        </div>
+
+                    </div>
+
+
+                    {% if profit >= 0 %}
+
+                    <div class="stat-value profit-value">
+
+                        +₹ {{ profit|floatformat:2 }}
+
+                    </div>
+
+                    {% else %}
+
+                    <div class="stat-value loss-value">
+
+                        ₹ {{ profit|floatformat:2 }}
+
+                    </div>
+
+                    {% endif %}
+
+
+                    <div class="stat-subtitle">
+
+                        Unrealized profit / loss
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- HOLDINGS -->
+
+            <div class="col-md-6 col-xl-3">
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <div class="stat-title">
+                            Holdings
+                        </div>
+
+                        <div class="stat-icon">
+
+                            <i class="bi bi-bar-chart"></i>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-value">
+
+                        {{ holdings }}
+
+                    </div>
+
+
+                    <div class="stat-subtitle">
+
+                        Stocks in portfolio
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- ================= MARKET ================= -->
+
+        <div class="dashboard-section">
+
+            <div class="section-heading">
+
+                <h3>
+                    Market Overview
+                </h3>
+
+                <a href="{% url 'search_stock' %}">
+                    Search Stocks
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+
+            </div>
+
+
+            <div class="row g-4">
+
+
+                <!-- NIFTY -->
+
+                <div class="col-md-6">
+
+                    <div class="market-card">
+
+                        <div class="market-header">
+
+                            <div class="market-name">
+                                NIFTY 50
+                            </div>
+
+                            <div class="market-icon">
+
+                                <i class="bi bi-graph-up"></i>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="market-price">
+
+                            ₹ {{ nifty|floatformat:2 }}
+
+                        </div>
+
+
+                        <div class="market-label">
+
+                            NSE Index
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- SENSEX -->
+
+                <div class="col-md-6">
+
+                    <div class="market-card">
+
+                        <div class="market-header">
+
+                            <div class="market-name">
+                                SENSEX
+                            </div>
+
+                            <div class="market-icon">
+
+                                <i class="bi bi-bar-chart-line"></i>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="market-price">
+
+                            ₹ {{ sensex|floatformat:2 }}
+
+                        </div>
+
+
+                        <div class="market-label">
+
+                            BSE Index
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
             </div>
 
         </div>
+
+
+        <!-- ================= HOLDINGS ================= -->
+
+        <div class="dashboard-section">
+
+            <div class="section-heading">
+
+                <h3>
+                    Your Holdings
+                </h3>
+
+                <a href="{% url 'portfolio' %}">
+                    View Portfolio
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+
+            </div>
+
+
+            <div class="holdings-card">
+
+
+                {% if portfolio %}
+
+
+                <div class="table-responsive">
+
+                    <table class="holdings-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    STOCK
+                                </th>
+
+                                <th>
+                                    QUANTITY
+                                </th>
+
+                                <th>
+                                    AVG. PRICE
+                                </th>
+
+                                <th>
+                                    ACTION
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+
+                        {% for stock in portfolio %}
+
+                            <tr>
+
+
+                                <td>
+
+                                    <div class="stock-symbol">
+
+                                        {{ stock.symbol }}
+
+                                    </div>
+
+
+                                    <div class="stock-company">
+
+                                        {{ stock.company_name }}
+
+                                    </div>
+
+                                </td>
+
+
+                                <td>
+
+                                    <span class="quantity-badge">
+
+                                        {{ stock.quantity }}
+
+                                        shares
+
+                                    </span>
+
+                                </td>
+
+
+                                <td>
+
+                                    ₹ {{ stock.average_price|floatformat:2 }}
+
+                                </td>
+
+
+                                <td>
+
+                                    <a
+                                        href="{% url 'sell_stock' stock.symbol %}"
+                                        class="btn btn-sm btn-outline-danger"
+                                    >
+
+                                        <i class="bi bi-arrow-down-circle me-1"></i>
+
+                                        Sell
+
+                                    </a>
+
+                                </td>
+
+
+                            </tr>
+
+                        {% endfor %}
+
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+                {% else %}
+
+
+                <!-- EMPTY -->
+
+                <div class="empty-portfolio">
+
+                    <div class="empty-icon">
+
+                        <i class="bi bi-briefcase"></i>
+
+                    </div>
+
+
+                    <h4>
+                        No Holdings Yet
+                    </h4>
+
+
+                    <p>
+                        You haven't purchased any stocks yet.
+                        Search for a stock and make your first
+                        virtual trade.
+                    </p>
+
+
+                    <a
+                        href="{% url 'search_stock' %}"
+                        class="btn btn-primary-custom"
+                    >
+
+                        <i class="bi bi-search me-2"></i>
+
+                        Search Stocks
+
+                    </a>
+
+                </div>
+
+
+                {% endif %}
+
+
+            </div>
+
+        </div>
+
+
+        <!-- ================= QUICK ACTIONS ================= -->
+
+        <div class="dashboard-section">
+
+            <div class="section-heading">
+
+                <h3>
+                    Quick Actions
+                </h3>
+
+            </div>
+
+
+            <div class="row g-4">
+
+
+                <!-- SEARCH -->
+
+                <div class="col-md-4">
+
+                    <div class="action-card">
+
+                        <h4>
+
+                            <i class="bi bi-search cyan-text me-2"></i>
+
+                            Find a Stock
+
+                        </h4>
+
+
+                        <p>
+
+                            Search Indian stocks and check
+                            their current market price.
+
+                        </p>
+
+
+                        <a
+                            href="{% url 'search_stock' %}"
+                            class="btn btn-primary-custom"
+                        >
+
+                            Search Stock
+
+                            <i class="bi bi-arrow-right ms-2"></i>
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- PORTFOLIO -->
+
+                <div class="col-md-4">
+
+                    <div class="action-card">
+
+                        <h4>
+
+                            <i class="bi bi-briefcase cyan-text me-2"></i>
+
+                            Manage Portfolio
+
+                        </h4>
+
+
+                        <p>
+
+                            View your holdings and monitor
+                            your investment performance.
+
+                        </p>
+
+
+                        <a
+                            href="{% url 'portfolio' %}"
+                            class="btn btn-outline-custom"
+                        >
+
+                            View Portfolio
+
+                            <i class="bi bi-arrow-right ms-2"></i>
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- TRANSACTIONS -->
+
+                <div class="col-md-4">
+
+                    <div class="action-card">
+
+                        <h4>
+
+                            <i class="bi bi-clock-history cyan-text me-2"></i>
+
+                            Transactions
+
+                        </h4>
+
+
+                        <p>
+
+                            Review all your previous BUY
+                            and SELL transactions.
+
+                        </p>
+
+
+                        <a
+                            href="{% url 'transactions' %}"
+                            class="btn btn-outline-custom"
+                        >
+
+                            View Transactions
+
+                            <i class="bi bi-arrow-right ms-2"></i>
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
 
     </div>
 
 </div>
 
-<script>
-
-const profitCtx = document.getElementById("profitChart");
-
-new Chart(profitCtx, {
-
-    type: "line",
-
-    data: {
-
-        labels: [
-            {% for stock in portfolio %}
-                "{{ stock.symbol }}",
-            {% endfor %}
-        ],
-
-        datasets: [{
-
-            label: "Investment",
-
-            data: [
-                {% for stock in portfolio %}
-                    {{ stock.average_price }},
-                {% endfor %}
-            ],
-
-            borderWidth: 2,
-            fill: false
-
-        }]
-
-    }
-
-});
-
-</script>
 
 {% endblock %}

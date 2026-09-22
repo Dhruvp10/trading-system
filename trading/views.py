@@ -4,25 +4,15 @@ from decimal import Decimal
 import yfinance as yf
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
-
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
 from users.models import UserProfile
-from .models import Portfolio, Transaction, Watchlist
+from .models import Portfolio, Transaction, Watchlist, Stock
+from django.db import transaction
 
-
-from django.shortcuts import render, redirect
 
 def home(request):
-
-    if request.user.is_authenticated:
-        return redirect("dashboard")
-
     return render(request, "home.html")
-
-from django.contrib.auth.decorators import login_required
-
-@login_required
-def dashboard(request):
-    ...
 
 
 @login_required
@@ -30,33 +20,46 @@ def dashboard(request):
 
     profile = UserProfile.objects.get(user=request.user)
     portfolio = Portfolio.objects.filter(user=request.user)
-    
+
     try:
         nifty = yf.Ticker("^NSEI").info.get("currentPrice", 0)
-    except:
+    except Exception:
         nifty = 0
 
     try:
         sensex = yf.Ticker("^BSESN").info.get("currentPrice", 0)
-    except:
+    except Exception:
         sensex = 0
 
     total_portfolio = Decimal("0")
     total_profit = Decimal("0")
 
+    performance_data = []
+
     for stock in portfolio:
+
         try:
             ticker = yf.Ticker(stock.symbol + ".NS")
             info = ticker.info
-            current_price = Decimal(str(info.get("currentPrice", 0)))
-        except:
-            current_price = Decimal("0")
+
+            current_price = Decimal(
+                str(info.get("currentPrice", stock.average_price))
+            )
+
+        except Exception:
+            current_price = stock.average_price
 
         investment = stock.average_price * stock.quantity
         current_value = current_price * stock.quantity
 
         total_portfolio += current_value
         total_profit += current_value - investment
+
+        performance_data.append({
+            "symbol": stock.symbol,
+            "investment": float(investment),
+            "current_value": float(current_value),
+        })
 
     context = {
         "balance": profile.virtual_balance,
@@ -66,6 +69,7 @@ def dashboard(request):
         "portfolio": portfolio,
         "nifty": nifty,
         "sensex": sensex,
+        "performance_data": performance_data,
     }
 
     return render(request, "dashboard.html", context)
@@ -78,29 +82,71 @@ def search_stock(request):
 
     if request.method == "POST":
 
-        symbol = request.POST.get("symbol", "").upper()
+        symbol = request.POST.get("symbol", "").strip().upper()
 
-        try:
-            stock = yf.Ticker(symbol + ".NS")
-            info = stock.info
+        if not symbol:
+            error = "Please enter a stock symbol."
 
-            stock_data = {
-                "symbol": symbol,
-                "company": info.get("longName"),
-                "price": info.get("currentPrice"),
-                "open": info.get("open"),
-                "high": info.get("dayHigh"),
-                "low": info.get("dayLow"),
-                "volume": info.get("volume"),
-            }
+        else:
 
-        except Exception:
-            error = "Stock not found!"
+            db_stock = Stock.objects.filter(
+                symbol__iexact=symbol
+            ).first()
 
-    return render(request, "search_stock.html", {
-        "stock": stock_data,
-        "error": error,
-    })
+            if not db_stock:
+                error = "Stock not found in NSE database."
+
+            else:
+
+                symbol = db_stock.symbol
+
+                try:
+
+                    ticker = yf.Ticker(symbol + ".NS")
+                    info = ticker.info
+
+                    current_price = info.get("currentPrice")
+
+                    if current_price is None:
+                        current_price = info.get(
+                            "regularMarketPrice"
+                        )
+
+                    if current_price is None:
+                        current_price = 0
+
+                    stock_data = {
+                        "symbol": symbol,
+                        "company": db_stock.company_name,
+                        "price": current_price,
+                        "open": info.get("open", 0),
+                        "high": info.get("dayHigh", 0),
+                        "low": info.get("dayLow", 0),
+                        "volume": info.get("volume", 0),
+                    }
+
+                except Exception as e:
+
+                    print("YFinance Error:", e)
+
+                    stock_data = {
+                        "symbol": symbol,
+                        "company": db_stock.company_name,
+                        "price": 0,
+                        "open": 0,
+                        "high": 0,
+                        "low": 0,
+                        "volume": 0,
+                    }
+
+    return render(
+        request,
+        "search_stock.html",
+        {
+            "stock": stock_data,
+            "error": error,
+        }
+    )
 
 
 @login_required
@@ -108,59 +154,140 @@ def buy_stock(request):
 
     if request.method == "POST":
 
-        symbol = request.POST.get("symbol")
-        company = request.POST.get("company")
-        price = Decimal(request.POST.get("price"))
-        quantity = int(request.POST.get("quantity"))
+        symbol = request.POST.get("symbol", "").strip().upper()
+        company = request.POST.get("company", "").strip()
+
+        try:
+            price = Decimal(
+                request.POST.get("price", "0")
+            )
+        except (TypeError, ValueError, ArithmeticError):
+
+            messages.error(
+                request,
+                "Please enter a valid price."
+            )
+
+            return redirect("search_stock")
+
+        try:
+            quantity = int(
+                request.POST.get("quantity", "0")
+            )
+        except (TypeError, ValueError):
+
+            messages.error(
+                request,
+                "Please enter a valid quantity."
+            )
+
+            return redirect("search_stock")
+
+        if not symbol:
+
+            messages.error(
+                request,
+                "Invalid stock symbol."
+            )
+
+            return redirect("search_stock")
+
+        if price <= 0:
+
+            messages.error(
+                request,
+                "Price must be greater than 0."
+            )
+
+            return redirect("search_stock")
+
+        if quantity <= 0:
+
+            messages.error(
+                request,
+                "Quantity must be greater than 0."
+            )
+
+            return redirect("search_stock")
 
         total = price * quantity
 
-        profile = UserProfile.objects.get(user=request.user)
+        try:
+            profile = UserProfile.objects.get(
+                user=request.user
+            )
+
+        except UserProfile.DoesNotExist:
+
+            messages.error(
+                request,
+                "User profile not found."
+            )
+
+            return redirect("dashboard")
 
         if profile.virtual_balance < total:
-            messages.error(request, "Insufficient Balance!")
+
+            messages.error(
+                request,
+                f"Insufficient Balance! Required ₹{total:.2f}"
+            )
+
             return redirect("search_stock")
 
-        profile.virtual_balance -= total
-        profile.save()
+        with transaction.atomic():
 
-        Transaction.objects.create(
-            user=request.user,
-            symbol=symbol,
-            company_name=company,
-            transaction_type="BUY",
-            quantity=quantity,
-            price=price,
-            total_amount=total,
-        )
+            profile.virtual_balance -= total
+            profile.save()
 
-        portfolio = Portfolio.objects.filter(
-            user=request.user,
-            symbol=symbol
-        ).first()
-
-        if portfolio:
-            total_qty = portfolio.quantity + quantity
-
-            avg_price = (
-                (portfolio.average_price * portfolio.quantity)
-                + (price * quantity)
-            ) / total_qty
-
-            portfolio.quantity = total_qty
-            portfolio.average_price = avg_price
-            portfolio.save()
-
-        else:
-            Portfolio.objects.create(
+            Transaction.objects.create(
                 user=request.user,
                 symbol=symbol,
                 company_name=company,
+                transaction_type="BUY",
                 quantity=quantity,
-                average_price=price,
+                price=price,
+                total_amount=total,
             )
 
-        messages.success(request, "Stock purchased successfully!")
+            portfolio = Portfolio.objects.filter(
+                user=request.user,
+                symbol=symbol
+            ).first()
+
+            if portfolio:
+
+                total_qty = (
+                    portfolio.quantity + quantity
+                )
+
+                avg_price = (
+                    (
+                        portfolio.average_price
+                        * portfolio.quantity
+                    )
+                    + (price * quantity)
+                ) / total_qty
+
+                portfolio.quantity = total_qty
+                portfolio.average_price = avg_price
+                portfolio.save()
+
+            else:
+
+                Portfolio.objects.create(
+                    user=request.user,
+                    symbol=symbol,
+                    company_name=company,
+                    quantity=quantity,
+                    average_price=price,
+                )
+
+        messages.success(
+            request,
+            f"Successfully purchased {quantity} shares of {symbol}."
+        )
+
         return redirect("dashboard")
 
     return redirect("search_stock")
@@ -171,26 +298,58 @@ def add_watchlist(request):
 
     if request.method == "POST":
 
-        symbol = request.POST.get("symbol")
-        company = request.POST.get("company")
+        symbol = request.POST.get(
+            "symbol",
+            ""
+        ).strip().upper()
+
+        company = request.POST.get(
+            "company",
+            ""
+        ).strip()
+
+        if not symbol:
+
+            messages.error(
+                request,
+                "Invalid stock symbol."
+            )
+
+            return redirect("search_stock")
+
+        if not company:
+
+            messages.error(
+                request,
+                "Invalid company name."
+            )
+
+            return redirect("search_stock")
 
         already_exists = Watchlist.objects.filter(
             user=request.user,
             symbol=symbol
         ).exists()
 
-        if not already_exists:
+        if already_exists:
 
-            Watchlist.objects.create(
-                user=request.user,
-                symbol=symbol,
-                company_name=company
+            messages.info(
+                request,
+                f"{symbol} is already in your Watchlist."
             )
 
-            messages.success(request, "Stock added to Watchlist!")
+            return redirect("search_stock")
 
-        else:
-            messages.info(request, "Stock already exists in Watchlist!")
+        Watchlist.objects.create(
+            user=request.user,
+            symbol=symbol,
+            company_name=company
+        )
+
+        messages.success(
+            request,
+            f"{symbol} added to Watchlist successfully!"
+        )
 
     return redirect("search_stock")
 
@@ -202,19 +361,129 @@ def transactions(request):
         user=request.user
     ).order_by("-id")
 
-    return render(request, "transactions.html", {
-        "transactions": transactions
-    })
+    return render(
+        request,
+        "transactions.html",
+        {
+            "transactions": transactions
+        }
+    )
 
 
 @login_required
 def portfolio(request):
 
-    portfolio = Portfolio.objects.filter(user=request.user)
+    portfolio = Portfolio.objects.filter(
+        user=request.user
+    )
 
-    return render(request, "portfolio.html", {
-        "portfolio": portfolio
-    })
+    portfolio_data = []
+
+    total_investment = Decimal("0")
+    total_current_value = Decimal("0")
+
+    performance_data = []
+
+    for stock in portfolio:
+
+        try:
+
+            ticker = yf.Ticker(
+                stock.symbol + ".NS"
+            )
+
+            info = ticker.info
+
+            current_price = Decimal(
+                str(
+                    info.get(
+                        "currentPrice",
+                        stock.average_price
+                    )
+                )
+            )
+
+        except Exception:
+
+            current_price = stock.average_price
+
+        investment = (
+            stock.average_price
+            * stock.quantity
+        )
+
+        current_value = (
+            current_price
+            * stock.quantity
+        )
+
+        profit_loss = (
+            current_value
+            - investment
+        )
+
+        if investment > 0:
+
+            profit_percentage = (
+                profit_loss
+                / investment
+            ) * 100
+
+        else:
+
+            profit_percentage = Decimal("0")
+
+        total_investment += investment
+        total_current_value += current_value
+
+        portfolio_data.append({
+            "symbol": stock.symbol,
+            "company": stock.company_name,
+            "quantity": stock.quantity,
+            "average_price": stock.average_price,
+            "current_price": current_price,
+            "investment": investment,
+            "current_value": current_value,
+            "profit_loss": profit_loss,
+            "profit_percentage": profit_percentage,
+        })
+
+        performance_data.append({
+            "symbol": stock.symbol,
+            "investment": float(investment),
+            "current_value": float(current_value),
+        })
+
+    total_profit_loss = (
+        total_current_value
+        - total_investment
+    )
+
+    if total_investment > 0:
+
+        total_profit_percentage = (
+            total_profit_loss
+            / total_investment
+        ) * 100
+
+    else:
+
+        total_profit_percentage = Decimal("0")
+
+    context = {
+        "portfolio": portfolio_data,
+        "total_investment": total_investment,
+        "total_current_value": total_current_value,
+        "total_profit_loss": total_profit_loss,
+        "total_profit_percentage": total_profit_percentage,
+        "performance_data": performance_data,
+    }
+
+    return render(
+        request,
+        "portfolio.html",
+        context
+    )
 
 
 @login_required
@@ -228,64 +497,148 @@ def sell_stock(request, symbol):
 
     if request.method == "POST":
 
-        quantity = int(request.POST.get("quantity"))
+        try:
+
+            quantity = int(
+                request.POST.get(
+                    "quantity",
+                    0
+                )
+            )
+
+        except (TypeError, ValueError):
+
+            messages.error(
+                request,
+                "Please enter a valid quantity."
+            )
+
+            return redirect(
+                "sell_stock",
+                symbol=symbol
+            )
+
+        if quantity <= 0:
+
+            messages.error(
+                request,
+                "Quantity must be greater than 0."
+            )
+
+            return redirect(
+                "sell_stock",
+                symbol=symbol
+            )
 
         if quantity > stock.quantity:
-            messages.error(request, "Invalid Quantity!")
-            return redirect("sell_stock", symbol=symbol)
 
-        ticker = yf.Ticker(symbol + ".NS")
-        info = ticker.info
-        current_price = Decimal(
-            str(info.get("currentPrice", stock.average_price))
+            messages.error(
+                request,
+                f"You only own {stock.quantity} shares."
+            )
+
+            return redirect(
+                "sell_stock",
+                symbol=symbol
+            )
+
+        try:
+
+            ticker = yf.Ticker(
+                symbol + ".NS"
+            )
+
+            info = ticker.info
+
+            current_price = Decimal(
+                str(
+                    info.get(
+                        "currentPrice",
+                        stock.average_price
+                    )
+                )
+            )
+
+        except Exception:
+
+            current_price = stock.average_price
+
+        total_amount = (
+            current_price
+            * quantity
         )
 
-        total_amount = current_price * quantity
+        with transaction.atomic():
 
-        profile = UserProfile.objects.get(user=request.user)
-        profile.virtual_balance += total_amount
-        profile.save()
+            profile = UserProfile.objects.get(
+                user=request.user
+            )
 
-        Transaction.objects.create(
-            user=request.user,
-            symbol=stock.symbol,
-            company_name=stock.company_name,
-            transaction_type="SELL",
-            quantity=quantity,
-            price=current_price,
-            total_amount=total_amount,
+            profile.virtual_balance += total_amount
+            profile.save()
+
+            Transaction.objects.create(
+                user=request.user,
+                symbol=stock.symbol,
+                company_name=stock.company_name,
+                transaction_type="SELL",
+                quantity=quantity,
+                price=current_price,
+                total_amount=total_amount,
+            )
+
+            stock.quantity -= quantity
+
+            if stock.quantity == 0:
+
+                stock.delete()
+
+            else:
+
+                stock.save()
+
+        messages.success(
+            request,
+            f"Successfully sold {quantity} shares of {symbol}."
         )
 
-        stock.quantity -= quantity
-
-        if stock.quantity == 0:
-            stock.delete()
-        else:
-            stock.save()
-
-        messages.success(request, "Stock Sold Successfully!")
         return redirect("portfolio")
 
-    return render(request, "sell_stock.html", {
-        "stock": stock
-    })
+    return render(
+        request,
+        "sell_stock.html",
+        {
+            "stock": stock
+        }
+    )
 
 
 @login_required
 def watchlist(request):
 
-    stocks = Watchlist.objects.filter(user=request.user)
+    stocks = Watchlist.objects.filter(
+        user=request.user
+    )
 
     watchlist_data = []
 
     for stock in stocks:
 
         try:
-            ticker = yf.Ticker(stock.symbol + ".NS")
-            info = ticker.info
-            current_price = info.get("currentPrice", 0)
 
-        except:
+            ticker = yf.Ticker(
+                stock.symbol + ".NS"
+            )
+
+            info = ticker.info
+
+            current_price = info.get(
+                "currentPrice",
+                0
+            )
+
+        except Exception:
+
             current_price = 0
 
         watchlist_data.append({
@@ -294,6 +647,70 @@ def watchlist(request):
             "price": current_price,
         })
 
-    return render(request, "watchlist.html", {
-        "watchlist": watchlist_data
-    })
+    return render(
+        request,
+        "watchlist.html",
+        {
+            "watchlist": watchlist_data
+        }
+    )
+
+
+@login_required
+def remove_watchlist(request, symbol):
+
+    stock = Watchlist.objects.filter(
+        user=request.user,
+        symbol=symbol
+    ).first()
+
+    if stock:
+
+        stock.delete()
+
+        messages.success(
+            request,
+            "Stock removed from Watchlist!"
+        )
+
+    else:
+
+        messages.error(
+            request,
+            "Stock not found in Watchlist!"
+        )
+
+    return redirect("watchlist")
+
+
+@require_GET
+def stock_suggestions(request):
+
+    query = request.GET.get(
+        "q",
+        ""
+    ).strip()
+
+    if len(query) < 2:
+
+        return JsonResponse(
+            [],
+            safe=False
+        )
+
+    stocks = Stock.objects.filter(
+        symbol__icontains=query
+    ).order_by("symbol")[:10]
+
+    results = [
+        {
+            "symbol": stock.symbol,
+            "company": stock.company_name
+        }
+        for stock in stocks
+    ]
+
+    return JsonResponse(
+        results,
+        safe=False
+    )

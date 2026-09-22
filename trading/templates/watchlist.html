@@ -17,6 +17,7 @@ Watchlist
                 <th>Symbol</th>
                 <th>Company</th>
                 <th>Live Price</th>
+                <th>Action</th>
             </tr>
         </thead>
 
@@ -25,15 +26,37 @@ Watchlist
             {% for stock in watchlist %}
 
             <tr>
-                <td>{{ stock.symbol }}</td>
-                <td>{{ stock.company }}</td>
-                <td>₹ {{ stock.price }}</td>
+
+                <td>
+                    <strong>{{ stock.symbol }}</strong>
+                </td>
+
+                <td>
+                    {{ stock.company }}
+                </td>
+
+                <td>
+                    ₹ {{ stock.price }}
+                </td>
+
+                <td>
+
+                    <a
+                        href="{% url 'remove_watchlist' stock.symbol %}"
+                        class="btn btn-sm btn-danger"
+                        onclick="return confirm('Remove {{ stock.symbol }} from Watchlist?');"
+                    >
+                        ❌ Remove
+                    </a>
+
+                </td>
+
             </tr>
 
             {% empty %}
 
             <tr>
-                <td colspan="3" class="text-center">
+                <td colspan="4" class="text-center">
                     No Stocks Added Yet
                 </td>
             </tr>

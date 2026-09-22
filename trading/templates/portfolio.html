@@ -1,62 +1,394 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
 
-{% block title %}
-Portfolio
-{% endblock %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-{% block content %}
+    <title>My Portfolio - Paper Trading</title>
 
-<h2 class="mb-4">📊 My Portfolio</h2>
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
 
-<table class="table table-bordered table-striped">
+    <style>
+        body {
+            background: #f5f7fa;
+        }
 
-   <thead class="table-dark">
-<tr>
-    <th>Symbol</th>
-    <th>Qty</th>
-    <th>Avg Price</th>
-    <th>Live Price</th>
-    <th>Investment</th>
-    <th>Current Value</th>
-    <th>P/L</th>
-    <th>Action</th>
-</tr>
-</thead>
+        .navbar-brand {
+            font-weight: bold;
+        }
 
-    <tbody>
+        .summary-card {
+            border: none;
+            border-radius: 15px;
+            transition: 0.3s;
+        }
 
-        {% for stock in portfolio %}
+        .summary-card:hover {
+            transform: translateY(-5px);
+        }
 
-        <tr>
+        .profit {
+            color: #198754;
+            font-weight: 600;
+        }
 
-            <td>{{ stock.symbol }}</td>
-            <td>{{ stock.company_name }}</td>
-            <td>{{ stock.quantity }}</td>
-            <td>₹ {{ stock.average_price }}</td>
+        .loss {
+            color: #dc3545;
+            font-weight: 600;
+        }
 
-        </tr>
+        .portfolio-table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+    </style>
 
-        <td>
-   <a href="{% url 'sell_stock' stock.symbol %}" class="btn btn-danger btn-sm">
-    Sell
-</a>
+</head>
 
-</td>
+<body>
 
-        {% empty %}
+<!-- Navbar -->
 
-        <tr>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
 
-            <td colspan="4" class="text-center">
-                No stocks purchased yet.
-            </td>
+    <div class="container">
 
-        </tr>
+        <a class="navbar-brand" href="/">
+            📈 Paper Trading
+        </a>
 
-        {% endfor %}
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNav"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-    </tbody>
+        <div class="collapse navbar-collapse" id="navbarNav">
 
-</table>
+            <ul class="navbar-nav ms-auto">
 
-{% endblock %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'dashboard' %}">
+                        Dashboard
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'search_stock' %}">
+                        Search Stock
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'portfolio' %}">
+                        Portfolio
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'watchlist' %}">
+                        Watchlist
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link text-danger" href="{% url 'logout' %}">
+                        Logout
+                    </a>
+                </li>
+
+            </ul>
+
+        </div>
+
+    </div>
+
+</nav>
+
+
+<!-- Page -->
+
+<div class="container py-5">
+
+    <h2 class="mb-4">
+        💼 My Portfolio
+    </h2>
+
+
+    <!-- Summary Cards -->
+
+    <div class="row g-4 mb-5">
+
+        <div class="col-md-4">
+
+            <div class="card summary-card shadow-sm">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Total Investment
+                    </h6>
+
+                    <h3>
+                        ₹{{ total_investment|floatformat:2 }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card summary-card shadow-sm">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Current Value
+                    </h6>
+
+                    <h3>
+                        ₹{{ total_current_value|floatformat:2 }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card summary-card shadow-sm">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Total Profit / Loss
+                    </h6>
+
+                    <h3 class="
+                        {% if total_profit_loss >= 0 %}
+                            profit
+                        {% else %}
+                            loss
+                        {% endif %}
+                    ">
+
+                        {% if total_profit_loss >= 0 %}
+                            +₹{{ total_profit_loss|floatformat:2 }}
+                        {% else %}
+                            -₹{{ total_profit_loss|floatformat:2|slice:"1:" }}
+                        {% endif %}
+
+                    </h3>
+
+                    <small>
+
+                        {{ total_profit_percentage|floatformat:2 }}%
+
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Portfolio Table -->
+
+    <div class="card portfolio-table shadow-sm">
+
+        <div class="card-body">
+
+            <h5 class="mb-4">
+                Your Holdings
+            </h5>
+
+
+            {% if portfolio %}
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead class="table-dark">
+
+                        <tr>
+
+                            <th>Stock</th>
+                            <th>Quantity</th>
+                            <th>Avg. Price</th>
+                            <th>Current Price</th>
+                            <th>Investment</th>
+                            <th>Current Value</th>
+                            <th>P/L</th>
+                            <th>P/L %</th>
+                            <th>Action</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for stock in portfolio %}
+
+                        <tr>
+
+                            <td>
+
+                                <strong>
+                                    {{ stock.symbol }}
+                                </strong>
+
+                                <br>
+
+                                <small class="text-muted">
+                                    {{ stock.company }}
+                                </small>
+
+                            </td>
+
+
+                            <td>
+                                {{ stock.quantity }}
+                            </td>
+
+
+                            <td>
+                                ₹{{ stock.average_price|floatformat:2 }}
+                            </td>
+
+
+                            <td>
+                                ₹{{ stock.current_price|floatformat:2 }}
+                            </td>
+
+
+                            <td>
+                                ₹{{ stock.investment|floatformat:2 }}
+                            </td>
+
+
+                            <td>
+                                ₹{{ stock.current_value|floatformat:2 }}
+                            </td>
+
+
+                            <td>
+
+                                <span class="
+                                    {% if stock.profit_loss >= 0 %}
+                                        profit
+                                    {% else %}
+                                        loss
+                                    {% endif %}
+                                ">
+
+                                    {% if stock.profit_loss >= 0 %}
+                                        +₹{{ stock.profit_loss|floatformat:2 }}
+                                    {% else %}
+                                        -₹{{ stock.profit_loss|floatformat:2|slice:"1:" }}
+                                    {% endif %}
+
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <span class="
+                                    {% if stock.profit_loss >= 0 %}
+                                        profit
+                                    {% else %}
+                                        loss
+                                    {% endif %}
+                                ">
+
+                                    {{ stock.profit_percentage|floatformat:2 }}%
+
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <a
+                                    href="{% url 'sell_stock' stock.symbol %}"
+                                    class="btn btn-danger btn-sm"
+                                >
+                                    Sell
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            <div class="text-center py-5">
+
+                <h4>
+                    📭 No Holdings Yet
+                </h4>
+
+                <p class="text-muted">
+                    You haven't purchased any stocks yet.
+                </p>
+
+                <a
+                    href="{% url 'search_stock' %}"
+                    class="btn btn-primary"
+                >
+                    Search Stocks
+                </a>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+</body>
+
+</html>

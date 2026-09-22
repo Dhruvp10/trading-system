@@ -8,62 +8,140 @@ Sell Stock
 
 <div class="container mt-4">
 
-    <div class="card shadow">
+    <div class="row justify-content-center">
 
-        <div class="card-header bg-danger text-white">
-            <h3>Sell Stock</h3>
-        </div>
+        <div class="col-md-7">
 
-        <div class="card-body">
+            <div class="card shadow">
 
-            <h4>{{ stock.company_name }}</h4>
-
-            <table class="table">
-                <tr>
-                    <th>Symbol</th>
-                    <td>{{ stock.symbol }}</td>
-                </tr>
-
-                <tr>
-                    <th>Available Quantity</th>
-                    <td>{{ stock.quantity }}</td>
-                </tr>
-
-                <tr>
-                    <th>Average Price</th>
-                    <td>₹ {{ stock.average_price }}</td>
-                </tr>
-            </table>
-
-            <form method="POST">
-                {% csrf_token %}
-
-                <div class="mb-3">
-                    <label>Quantity to Sell</label>
-                    <input
-                        type="number"
-                        name="quantity"
-                        class="form-control"
-                        min="1"
-                        max="{{ stock.quantity }}"
-                        required
-                    >
+                <!-- Header -->
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0">Sell Stock</h3>
                 </div>
 
-                <button type="submit" class="btn btn-danger">
-                    Sell Stock
-                </button>
+                <div class="card-body">
 
-                <a href="{% url 'portfolio' %}" class="btn btn-secondary">
-                    Cancel
-                </a>
+                    <!-- Stock Information -->
+                    <h4>{{ stock.company_name }}</h4>
 
-            </form>
+                    <p class="text-muted">
+                        {{ stock.symbol }}
+                    </p>
+
+                    <table class="table table-bordered">
+
+                        <tr>
+                            <th>Symbol</th>
+                            <td>{{ stock.symbol }}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Available Quantity</th>
+                            <td>
+                                <strong>{{ stock.quantity }}</strong> shares
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th>Average Buy Price</th>
+                            <td>
+                                ₹ {{ stock.average_price }}
+                            </td>
+                        </tr>
+
+                    </table>
+
+                    <hr>
+
+                    <!-- Sell Form -->
+
+                    <form method="POST">
+
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                Quantity to Sell
+                            </label>
+
+                            <input
+                                type="number"
+                                name="quantity"
+                                id="quantity"
+                                class="form-control"
+                                min="1"
+                                max="{{ stock.quantity }}"
+                                required
+                                placeholder="Enter quantity"
+                            >
+
+                            <small class="text-muted">
+                                You can sell maximum
+                                {{ stock.quantity }} shares.
+                            </small>
+
+                        </div>
+
+                        <!-- Estimated Amount -->
+
+                        <div class="alert alert-warning">
+
+                            <div class="d-flex justify-content-between">
+
+                                <span>
+                                    Estimated Sale Amount
+                                </span>
+
+                                <strong id="totalAmount">
+                                    ₹ 0.00
+                                </strong>
+
+                            </div>
+
+                            <small class="text-muted">
+                                Final amount will be calculated using
+                                the market price on the server.
+                            </small>
+
+                        </div>
+
+                        <!-- Buttons -->
+
+                        <button
+                            type="submit"
+                            class="btn btn-danger"
+                        >
+                            💸 Sell Stock
+                        </button>
+
+                        <a
+                            href="{% url 'portfolio' %}"
+                            class="btn btn-secondary"
+                        >
+                            Cancel
+                        </a>
+
+                    </form>
+
+                </div>
+
+            </div>
 
         </div>
 
     </div>
 
 </div>
+<form method="POST" action="{% url 'add_watchlist' %}">
+    {% csrf_token %}
+
+    <input type="hidden" name="symbol" value="{{ stock.symbol }}">
+    <input type="hidden" name="company" value="{{ stock.company }}">
+
+    <button type="submit" class="btn btn-warning">
+        ⭐ Add to Watchlist
+    </button>
+</form>
 
 {% endblock %}
