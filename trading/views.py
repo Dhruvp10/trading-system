@@ -99,89 +99,233 @@ def search_stock(request):
             else:
 
                 symbol = db_stock.symbol
+                yf_symbol = symbol + ".NS"
 
                 try:
 
-                    ticker = yf.Ticker(symbol + ".NS")
+                    print("=" * 60)
+                    print("YFINANCE DEBUG START")
+                    print("Symbol:", yf_symbol)
 
-                    # ---------------------------------
-                    # Get recent market data
-                    # ---------------------------------
+                    ticker = yf.Ticker(yf_symbol)
 
-                    history = ticker.history(
-                        period="1d",
-                        interval="1m"
-                    )
+                    # -----------------------------------------
+                    # Try history first
+                    # -----------------------------------------
 
-                    current_price = None
+                    try:
+
+                        history = ticker.history(
+                            period="5d",
+                            interval="1d",
+                            auto_adjust=False
+                        )
+
+                        print("History Empty:", history.empty)
+                        print("History Columns:", list(history.columns))
+
+                        if not history.empty:
+                            print("Latest History:")
+                            print(history.tail(1).to_string())
+
+                        else:
+                            print("History returned EMPTY")
+
+                    except Exception as history_error:
+
+                        history = None
+
+                        print(
+                            "History Error:",
+                            repr(history_error)
+                        )
+
+
+                    # -----------------------------------------
+                    # Default values
+                    # -----------------------------------------
+
+                    current_price = 0
                     open_price = 0
                     high_price = 0
                     low_price = 0
                     volume = 0
 
-                    if not history.empty:
+
+                    # -----------------------------------------
+                    # Get price from history
+                    # -----------------------------------------
+
+                    if history is not None and not history.empty:
 
                         latest = history.iloc[-1]
 
-                        current_price = latest.get("Close", 0)
-
-                        open_price = latest.get("Open", 0)
-
-                        high_price = latest.get("High", 0)
-
-                        low_price = latest.get("Low", 0)
-
-                        volume = latest.get("Volume", 0)
-
-
-                    # ---------------------------------
-                    # Fallback to ticker.info
-                    # ---------------------------------
-
-                    if not current_price or current_price <= 0:
-
-                        info = ticker.info
-
-                        current_price = (
-                            info.get("currentPrice")
-                            or info.get("regularMarketPrice")
-                            or 0
+                        current_price = latest.get(
+                            "Close",
+                            0
                         )
 
-                        open_price = (
-                            info.get("open")
-                            or info.get("regularMarketOpen")
-                            or 0
+                        open_price = latest.get(
+                            "Open",
+                            0
                         )
 
-                        high_price = (
-                            info.get("dayHigh")
-                            or info.get("regularMarketDayHigh")
-                            or 0
+                        high_price = latest.get(
+                            "High",
+                            0
                         )
 
-                        low_price = (
-                            info.get("dayLow")
-                            or info.get("regularMarketDayLow")
-                            or 0
+                        low_price = latest.get(
+                            "Low",
+                            0
                         )
 
-                        volume = (
-                            info.get("volume")
-                            or info.get("regularMarketVolume")
-                            or 0
+                        volume = latest.get(
+                            "Volume",
+                            0
+                        )
+
+                        print(
+                            "History Current Price:",
+                            current_price
                         )
 
 
-                    # ---------------------------------
-                    # Validate price
-                    # ---------------------------------
+                    # -----------------------------------------
+                    # If history failed, try ticker.info
+                    # -----------------------------------------
 
-                    if not current_price or current_price <= 0:
+                    if (
+                        current_price is None
+                        or current_price <= 0
+                    ):
+
+                        print(
+                            "History price unavailable."
+                        )
+
+                        try:
+
+                            info = ticker.info
+
+                            print(
+                                "Ticker Info received:",
+                                bool(info)
+                            )
+
+                            current_price = (
+                                info.get("currentPrice")
+                                or info.get("regularMarketPrice")
+                                or info.get("previousClose")
+                                or 0
+                            )
+
+                            open_price = (
+                                info.get("open")
+                                or info.get("regularMarketOpen")
+                                or 0
+                            )
+
+                            high_price = (
+                                info.get("dayHigh")
+                                or info.get(
+                                    "regularMarketDayHigh"
+                                )
+                                or 0
+                            )
+
+                            low_price = (
+                                info.get("dayLow")
+                                or info.get(
+                                    "regularMarketDayLow"
+                                )
+                                or 0
+                            )
+
+                            volume = (
+                                info.get("volume")
+                                or info.get(
+                                    "regularMarketVolume"
+                                )
+                                or 0
+                            )
+
+                            print(
+                                "Info Current Price:",
+                                current_price
+                            )
+
+                        except Exception as info_error:
+
+                            print(
+                                "Ticker Info Error:",
+                                repr(info_error)
+                            )
+
+
+                    # -----------------------------------------
+                    # Convert values safely
+                    # -----------------------------------------
+
+                    try:
+                        current_price = float(
+                            current_price or 0
+                        )
+                    except (TypeError, ValueError):
+                        current_price = 0
+
+
+                    try:
+                        open_price = float(
+                            open_price or 0
+                        )
+                    except (TypeError, ValueError):
+                        open_price = 0
+
+
+                    try:
+                        high_price = float(
+                            high_price or 0
+                        )
+                    except (TypeError, ValueError):
+                        high_price = 0
+
+
+                    try:
+                        low_price = float(
+                            low_price or 0
+                        )
+                    except (TypeError, ValueError):
+                        low_price = 0
+
+
+                    try:
+                        volume = int(
+                            volume or 0
+                        )
+                    except (TypeError, ValueError):
+                        volume = 0
+
+
+                    # -----------------------------------------
+                    # Final price check
+                    # -----------------------------------------
+
+                    print(
+                        "FINAL PRICE:",
+                        current_price
+                    )
+
+                    print("YFINANCE DEBUG END")
+                    print("=" * 60)
+
+
+                    if current_price <= 0:
 
                         error = (
-                            "Live price is currently unavailable. "
-                            "Please try again after a few seconds."
+                            "Live stock price is currently "
+                            "unavailable on the server. "
+                            "Please try again."
                         )
 
                     else:
@@ -189,21 +333,31 @@ def search_stock(request):
                         stock_data = {
                             "symbol": symbol,
                             "company": db_stock.company_name,
-                            "price": float(current_price),
-                            "open": float(open_price or 0),
-                            "high": float(high_price or 0),
-                            "low": float(low_price or 0),
-                            "volume": int(volume or 0),
+                            "price": current_price,
+                            "open": open_price,
+                            "high": high_price,
+                            "low": low_price,
+                            "volume": volume,
                         }
+
 
                 except Exception as e:
 
-                    print("YFinance Error:", e)
+                    print(
+                        "YFinance Main Error:",
+                        repr(e)
+                    )
+
+                    print(
+                        "YFinance Error Type:",
+                        type(e).__name__
+                    )
 
                     error = (
                         "Unable to fetch live stock price. "
                         "Please try again."
                     )
+
 
     return render(
         request,
